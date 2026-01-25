@@ -126,7 +126,42 @@ class JSONService {
     /// - Returns: 是否保存成功
     static func savePostsToJSON(fileName: String, modelContext: ModelContext) -> Bool {
         do {
-            let descriptor = FetchDescriptor<Post>(sortBy: [SortDescriptor(\.id)])
+            // 根据文件名确定 ID 范围
+            let idRange: Range<Int>
+            if fileName.contains("recommend") {
+                idRange = 1000..<2000
+            } else if fileName.contains("hot") {
+                idRange = 2000..<3000
+            } else {
+                // 默认保存所有帖子
+                let descriptor = FetchDescriptor<Post>(sortBy: [SortDescriptor(\.id)])
+                let posts = try modelContext.fetch(descriptor)
+                
+                let jsonArray = posts.map { $0.toJSON() }
+                let json: [String: Any] = ["list": jsonArray]
+                
+                guard let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                    print("❌ 无法获取 Documents 目录")
+                    return false
+                }
+                
+                let fileURL = documentsURL.appendingPathComponent(fileName)
+                let jsonData = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
+                try jsonData.write(to: fileURL)
+                
+                print("✅ 成功保存 \(posts.count) 条帖子到: \(fileURL.path)")
+                return true
+            }
+            
+            // 只获取指定 ID 范围的帖子
+            let minId = idRange.lowerBound
+            let maxId = idRange.upperBound
+            let descriptor = FetchDescriptor<Post>(
+                predicate: #Predicate<Post> { post in
+                    post.id >= minId && post.id < maxId
+                },
+                sortBy: [SortDescriptor(\.id)]
+            )
             let posts = try modelContext.fetch(descriptor)
             
             let jsonArray = posts.map { $0.toJSON() }
@@ -143,7 +178,7 @@ class JSONService {
             let jsonData = try JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys])
             try jsonData.write(to: fileURL)
             
-            print("✅ 成功保存 \(posts.count) 条帖子到: \(fileURL.path)")
+            print("✅ 成功保存 \(posts.count) 条帖子（ID范围: \(idRange)）到: \(fileURL.path)")
             return true
             
         } catch {

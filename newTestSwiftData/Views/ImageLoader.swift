@@ -6,15 +6,87 @@
 //
 
 import SwiftUI
-import UIKit
+import SDWebImageSwiftUI
+
+/// 网络图片加载视图
+/// 支持从网络加载图片，带有加载动画和占位效果
+struct NetworkImageView: View {
+    let imageURL: String
+    let baseURL = "https://github.com/xiaoyouxinqing/PostDemo/raw/master/PostDemo/Resources/"
+    
+    var body: some View {
+        WebImage(url: URL(string: baseURL + imageURL)) { image in
+            image
+                .resizable()
+        } placeholder: {
+            // 加载中的占位视图 - 类似微博/小红书的效果
+            ShimmerPlaceholder()
+        }
+        .onSuccess { image, data, cacheType in
+            // 图片加载成功
+        }
+        .onFailure { error in
+            // 图片加载失败
+            print("图片加载失败: \(error.localizedDescription)")
+        }
+        .indicator(Indicator.activity) // 显示加载指示器
+        .transition(AnyTransition.opacity.animation(.easeInOut(duration: 0.3))) // 淡入动画
+    }
+}
+
+/// 闪烁占位效果（类似微博、小红书）
+struct ShimmerPlaceholder: View {
+    @State private var isAnimating = false
+    
+    var body: some View {
+        ZStack {
+            // 背景色
+            Color(UIColor.systemGray6)
+            
+            // 闪烁渐变效果
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(UIColor.systemGray6),
+                    Color(UIColor.systemGray5),
+                    Color(UIColor.systemGray6)
+                ]),
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .opacity(0.6)
+            .offset(x: isAnimating ? 400 : -400)
+            .animation(
+                Animation.linear(duration: 1.5)
+                    .repeatForever(autoreverses: false),
+                value: isAnimating
+            )
+            
+            // 图片图标
+            Image(systemName: "photo")
+                .font(.system(size: 30))
+                .foregroundColor(Color(UIColor.systemGray4))
+        }
+        .onAppear {
+            isAnimating = true
+        }
+    }
+}
 
 /// 图片加载工具
-/// 负责从 Bundle 的 Resources 文件夹加载图片
+/// 兼容旧版本，支持本地和网络图片加载
 struct ImageLoader {
-    /// 从 Bundle 的 Resources 文件夹加载图片
-    /// - Parameter fileName: 图片文件名
-    /// - Returns: Image 视图，如果找不到则返回占位图
+    /// 从网络或本地加载图片
+    /// - Parameter fileName: 图片文件名或 URL
+    /// - Returns: Image 视图
     static func loadImage(from fileName: String) -> Image {
+        // 如果是网络 URL，使用 NetworkImageView
+        if fileName.hasPrefix("http://") || fileName.hasPrefix("https://") {
+            // 注意：这里返回的是 Image，但实际应该使用 NetworkImageView
+            // 为了保持接口兼容，这里先返回占位图
+            return Image(systemName: "photo")
+        }
+        
+        // 本地图片加载逻辑（保持原有逻辑）
         // 方法1: 尝试使用 URL 方式从 Resources 子目录加载（最可靠）
         if let url = Bundle.main.url(forResource: fileName, withExtension: nil, subdirectory: "Resources"),
            let imageData = try? Data(contentsOf: url),
@@ -42,13 +114,11 @@ struct ImageLoader {
         }
         
         // 如果都找不到，返回占位图
-        // 创建一个灰色的占位 UIImage
         let size = CGSize(width: 100, height: 100)
         let renderer = UIGraphicsImageRenderer(size: size)
         let placeholderImage = renderer.image { context in
-            UIColor.gray.setFill()
+            UIColor.systemGray6.setFill()
             context.fill(CGRect(origin: .zero, size: size))
-            // 添加一个图标
             if let systemImage = UIImage(systemName: "photo") {
                 systemImage.draw(in: CGRect(origin: .zero, size: size))
             }

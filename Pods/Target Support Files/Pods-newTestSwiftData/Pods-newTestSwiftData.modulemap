@@ -1,0 +1,6 @@
+framework module Pods_newTestSwiftData {
+  umbrella header "Pods-newTestSwiftData-umbrella.h"
+
+  export *
+  module * { export * }
+}

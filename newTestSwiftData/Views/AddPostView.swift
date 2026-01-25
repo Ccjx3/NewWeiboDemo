@@ -13,6 +13,9 @@ struct AddPostView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
+    /// 当前所在的列表类型（推荐或热门）
+    var listType: PostListType = .recommend
+    
     @State private var name = ""
     @State private var text = ""
     @State private var avatar = ""
@@ -72,10 +75,20 @@ struct AddPostView: View {
     }
     
     private func savePost() {
-        // 生成新的 ID（使用当前最大的 ID + 1）
-        let descriptor = FetchDescriptor<Post>(sortBy: [SortDescriptor(\.id, order: .reverse)])
+        // 根据列表类型生成新的 ID
+        // 推荐列表范围：1000-1999
+        // 热门列表范围：2000-2999
+        let (minId, maxId, defaultId, fileName) = listType.getIdRange()
+        
+        let descriptor = FetchDescriptor<Post>(
+            predicate: #Predicate<Post> { post in
+                post.id >= minId && post.id < maxId
+            },
+            sortBy: [SortDescriptor(\.id, order: .reverse)]
+        )
         let existingPosts = try? modelContext.fetch(descriptor)
-        let newId = (existingPosts?.first?.id ?? 0) + 1
+        let maxExistingId = existingPosts?.first?.id ?? defaultId
+        let newId = maxExistingId + 1
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
@@ -98,11 +111,33 @@ struct AddPostView: View {
         modelContext.insert(newPost)
         
         // 保存到 SwiftData
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+            print("✅ 新帖子已保存到\(listType == .recommend ? "推荐" : "热门")列表，ID: \(newId)")
+        } catch {
+            print("❌ 保存失败: \(error)")
+        }
         
-        // 同步到 JSON 文件
-        JSONService.savePostsToJSON(fileName: "PostListData_recommend_1.json", modelContext: modelContext)
+        // 同步到对应的 JSON 文件
+        JSONService.savePostsToJSON(fileName: fileName, modelContext: modelContext)
         
         dismiss()
+    }
+}
+
+/// 帖子列表类型枚举
+enum PostListType {
+    case recommend  // 推荐列表
+    case hot        // 热门列表
+    
+    /// 获取ID范围和对应的JSON文件名
+    /// - Returns: (最小ID, 最大ID, 默认ID, JSON文件名)
+    func getIdRange() -> (Int, Int, Int, String) {
+        switch self {
+        case .recommend:
+            return (1000, 2000, 999, "PostListData_recommend_1.json")
+        case .hot:
+            return (2000, 3000, 1999, "PostListData_hot_1.json")
+        }
     }
 }

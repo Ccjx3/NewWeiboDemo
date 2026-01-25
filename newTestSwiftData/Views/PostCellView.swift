@@ -12,14 +12,27 @@ import SwiftData
 struct PostCellView: View {
     @Bindable var post: Post
     @Environment(\.modelContext) private var modelContext
+    @State private var showDeletePopover = false
+    
+    /// 格式化数字显示（1000+ 显示为 1k+，1000000+ 显示为 1M+）
+    private func formatCount(_ count: Int) -> String {
+        if count >= 1_000_000 {
+            let millions = Double(count) / 1_000_000.0
+            return String(format: "%.1fM+", millions)
+        } else if count >= 1_000 {
+            let thousands = Double(count) / 1_000.0
+            return String(format: "%.1fk+", thousands)
+        } else {
+            return "\(count)"
+        }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // 用户信息区域
-            HStack(spacing: 12) {
-                // 头像
-                ImageLoader.loadImage(from: post.avatar)
-                    .resizable()
+            HStack(alignment: .center, spacing: 12) {
+                // 头像 - 使用网络图片加载
+                NetworkImageView(imageURL: post.avatar)
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 50, height: 50)
                     .clipShape(Circle())
@@ -43,16 +56,35 @@ struct PostCellView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    post.isFollowed.toggle()
-                }) {
-                    Text(post.isFollowed ? "已关注" : "关注")
-                        .font(.caption)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(post.isFollowed ? Color.gray.opacity(0.2) : Color.blue)
-                        .foregroundColor(post.isFollowed ? .primary : .white)
-                        .cornerRadius(15)
+                // 关注按钮和删除按钮区域
+                HStack(spacing: 8) {
+                    // 关注按钮
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            post.isFollowed.toggle()
+                        }
+                    }) {
+                        Text(post.isFollowed ? "已关注" : "关注")
+                            .font(.system(size: 14))
+                            .foregroundColor(post.isFollowed ? .gray : .white)
+                            .frame(width: 60, height: 28)
+                            .background(post.isFollowed ? Color.gray.opacity(0.2) : Color.blue)
+                            .cornerRadius(14)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // X 删除按钮
+                    Button(action: {
+                        print("🔘 点击了删除按钮")
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            showDeletePopover.toggle()
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.gray.opacity(0.6))
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             
@@ -70,31 +102,46 @@ struct PostCellView: View {
             }
             
             // 互动区域
-            HStack(spacing: 20) {
-                Button(action: {
-                    post.isLiked.toggle()
-                    if post.isLiked {
-                        post.likeCount += 1
-                    } else {
-                        post.likeCount = max(0, post.likeCount - 1)
-                    }
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: post.isLiked ? "heart.fill" : "heart")
-                            .foregroundColor(post.isLiked ? .red : .gray)
-                        Text("\(post.likeCount)")
-                            .font(.caption)
-                    }
-                }
+            HStack(spacing: 0) {
                 
-                HStack(spacing: 4) {
-                    Image(systemName: "message")
-                        .foregroundColor(.gray)
-                    Text("\(post.commentCount)")
-                        .font(.caption)
+                Spacer()
+                
+                PostCellToolbarButton(
+                    image: post.isLiked ? "heart.fill" : "heart",
+                    text: formatCount(post.likeCount),
+                    color: post.isLiked ? .red : .black)
+                {
+                    if post.isLiked {
+                        post.isLiked = false
+                        post.likeCount -= 1
+                    } else {
+                        post.isLiked = true
+                        post.likeCount += 1
+                    }
                 }
                 
                 Spacer()
+                
+                PostCellToolbarButton(
+                    image: "message",
+                    text: formatCount(post.commentCount),
+                    color: .black)
+                {
+                    print("点击评论")
+                }
+                
+                Spacer()
+                
+                PostCellToolbarButton(
+                    image: "arrowshape.turn.up.right",
+                    text: "转发",
+                    color: .black)
+                {
+                    print("点击转发")
+                }
+                
+                Spacer()
+                
             }
             .padding(.top, 4)
         }
@@ -107,6 +154,71 @@ struct PostCellView: View {
             Task {
                 try? modelContext.save()
                 JSONService.savePostsToJSON(fileName: "PostListData_recommend_1.json", modelContext: modelContext)
+            }
+        }
+        .overlay {
+            // 透明背景遮罩 - 点击关闭弹窗（必须在弹窗之前添加）
+            if showDeletePopover {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        print("🔘 点击了遮罩，关闭弹窗")
+                        withAnimation {
+                            showDeletePopover = false
+                        }
+                    }
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            // 删除弹窗 - 使用 overlay 绝对定位（必须在遮罩之后添加，确保在最上层）
+            if showDeletePopover {
+                DeletePopoverView(
+                    onDelete: {
+                        print("🗑️ 开始删除帖子: \(post.id)")
+                        // 根据帖子ID判断属于哪个列表
+                        let fileName: String
+                        if post.id >= 1000 && post.id < 2000 {
+                            fileName = "PostListData_recommend_1.json"
+                            print("📝 删除推荐列表帖子")
+                        } else if post.id >= 2000 && post.id < 3000 {
+                            fileName = "PostListData_hot_1.json"
+                            print("📝 删除热门列表帖子")
+                        } else {
+                            fileName = "PostListData_recommend_1.json"
+                            print("⚠️ 未知ID范围，默认使用推荐列表")
+                        }
+                        
+                        // 先关闭弹窗
+                        withAnimation {
+                            showDeletePopover = false
+                        }
+                        
+                        // 延迟删除，确保动画完成
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            withAnimation {
+                                modelContext.delete(post)
+                                do {
+                                    try modelContext.save()
+                                    print("✅ 帖子从SwiftData删除成功")
+                                    print("删除成功")
+                                    
+                                    // 同步到对应的JSON文件
+                                    JSONService.savePostsToJSON(fileName: fileName, modelContext: modelContext)
+                                    print("✅ 已同步到JSON文件: \(fileName)")
+                                } catch {
+                                    print("❌ 删除失败: \(error)")
+                                }
+                            }
+                        }
+                    },
+                    onDismiss: {
+                        withAnimation {
+                            showDeletePopover = false
+                        }
+                    }
+                )
+                .offset(x: -20, y: 45)
+                .transition(.scale(scale: 0.8, anchor: .top).combined(with: .opacity))
             }
         }
     }
@@ -136,5 +248,57 @@ struct PostCellView: View {
             let rowHeight = (width - imageSpace * 2) / 3
             return rowHeight * 2 + imageSpace
         }
+    }
+}
+
+/// 删除弹窗视图 - 气泡式设计
+struct DeletePopoverView: View {
+    let onDelete: () -> Void
+    let onDismiss: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // 小三角箭头
+            Triangle()
+                .fill(Color.white)
+                .frame(width: 16, height: 8)
+                .offset(x: 30)
+                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: -1)
+            
+            // 删除按钮
+            Button(action: {
+                print("🔘 点击了删除确认按钮")
+                onDelete()
+            }) {
+                Text("删除")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 20)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .background(Color.white)
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+        }
+        .frame(width: 100)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // 阻止事件传递到背景遮罩
+            print("🔘 点击了弹窗区域（不关闭）")
+        }
+    }
+}
+
+/// 三角形形状 - 用于气泡箭头
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }

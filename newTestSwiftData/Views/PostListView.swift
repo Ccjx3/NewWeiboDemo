@@ -44,8 +44,10 @@ struct PostListView: View {
                                 PostCellView(post: post)
                                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                                     .listRowSeparator(.hidden)
+                                    .listRowBackground(Color.clear)
                             }
-                            .onDelete(perform: deletePosts)
+                            // 禁用侧拉删除功能，只能通过点击 X 按钮删除
+                            // .onDelete(perform: deletePosts)
                         }
                         .listStyle(.plain)
                     }
@@ -60,9 +62,10 @@ struct PostListView: View {
                         Image(systemName: "plus")
                     }
                 }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    EditButton()
-                }
+                // 禁用编辑按钮，只能通过点击 X 按钮删除
+                // ToolbarItem(placement: .navigationBarLeading) {
+                //     EditButton()
+                // }
             }
             .sheet(isPresented: $showingAddPost) {
                 AddPostView()
@@ -128,16 +131,18 @@ struct PostListView: View {
         }
     }
     
-    /// 删除帖子
-    private func deletePosts(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(posts[index])
-            }
-            // 删除后同步到 JSON
-            JSONService.savePostsToJSON(fileName: "PostListData_recommend_1.json", modelContext: modelContext)
-        }
-    }
+    // 禁用侧拉删除功能，只能通过点击 X 按钮删除
+    // /// 删除帖子
+    // private func deletePosts(offsets: IndexSet) {
+    //     withAnimation {
+    //         for index in offsets {
+    //             modelContext.delete(posts[index])
+    //         }
+    //         // 删除后同步到 JSON
+    //         JSONService.savePostsToJSON(fileName: "PostListData_recommend_1.json", modelContext: modelContext)
+    //     }
+    // }
+    
 }
 
 #Preview {
