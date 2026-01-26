@@ -34,9 +34,8 @@ struct PostDetailView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     // 用户信息区域
                     HStack(alignment: .center, spacing: 12) {
-                        // 头像
-                        ImageLoader.loadImage(from: post.avatar)
-                            .resizable()
+                        // 头像 - 使用网络图片加载
+                        NetworkImageView(imageURL: post.avatar)
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 50, height: 50)
                             .clipShape(Circle())

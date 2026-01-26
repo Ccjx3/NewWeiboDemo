@@ -12,7 +12,8 @@ import Alamofire
 typealias NetworkRequestResult = Result<Data, Error>
 typealias NetworkRequestCompletion = (NetworkRequestResult) -> Void
 
-let NetworkAPIBaseURL = "https://github.com/xiaoyouxinqing/PostDemo/raw/master/PostDemo/Resources/"
+//let NetworkAPIBaseURL = "https://github.com/xiaoyouxinqing/PostDemo/raw/master/PostDemo/Resources/"
+let NetworkAPIBaseURL = "https://github.com/Ccjx3/weiboResource/tree/main/weibo/"
 
 class NetworkManager {
     static let shared = NetworkManager()

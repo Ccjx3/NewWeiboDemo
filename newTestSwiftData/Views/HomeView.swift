@@ -149,7 +149,10 @@ struct PostContentView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(posts) { post in
-                                PostCellView(post: post)
+                                NavigationLink(destination: PostDetailView(post: post)) {
+                                    PostCellView(post: post)
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                         .padding(.vertical, 12)

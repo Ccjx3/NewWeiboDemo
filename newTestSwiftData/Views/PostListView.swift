@@ -41,10 +41,13 @@ struct PostListView: View {
                     } else {
                         List {
                             ForEach(posts) { post in
-                                PostCellView(post: post)
-                                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                                    .listRowSeparator(.hidden)
-                                    .listRowBackground(Color.clear)
+                                NavigationLink(destination: PostDetailView(post: post)) {
+                                    PostCellView(post: post)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
                             }
                             // 禁用侧拉删除功能，只能通过点击 X 按钮删除
                             // .onDelete(perform: deletePosts)

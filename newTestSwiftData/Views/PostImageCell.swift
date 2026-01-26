@@ -17,7 +17,6 @@ private let kImageSpace: CGFloat = 6
 struct PostImageCell: View {
     let images: [String]
     let width: CGFloat
-    let baseURL = "https://github.com/xiaoyouxinqing/PostDemo/raw/master/PostDemo/Resources/"
     
     /// 控制图片浏览器的显示状态
     @State private var showPhotoBrowser = false
@@ -30,7 +29,7 @@ struct PostImageCell: View {
         Group {
             if images.count == 1 {
                 // 单张图片布局 - 使用网络图片
-                WebImage(url: URL(string: baseURL + images[0])) { image in
+                WebImage(url: URL(string: NetworkAPIBaseURL + images[0])) { image in
                     image
                         .resizable()
                         .scaledToFill()
@@ -139,7 +138,7 @@ struct PostImageCell: View {
             // 使用原生图片浏览器（仿小红书/微博效果）
             NativePhotoBrowser(
                 isPresented: $showPhotoBrowser,
-                images: images.map { baseURL + $0 }, // 转换为完整 URL
+                images: images.map { NetworkAPIBaseURL + $0 }, // 转换为完整 URL
                 initialIndex: selectedImageIndex
             )
             .id(selectedImageIndex) // 关键修复：使用 selectedImageIndex 作为 id，确保每次点击不同图片都重新创建视图
@@ -163,7 +162,6 @@ struct PostImageCell: View {
 struct PostImageCellRow: View {
     let images: [String]
     let width: CGFloat
-    let baseURL = "https://github.com/xiaoyouxinqing/PostDemo/raw/master/PostDemo/Resources/"
     
     /// 起始索引，用于计算每张图片在整个图片数组中的实际位置
     /// 例如：第二行的起始索引可能是 2 或 3
@@ -185,7 +183,7 @@ struct PostImageCellRow: View {
                 let actualIndex = startIndex + rowIndex
                 
                 // 使用网络图片加载
-                WebImage(url: URL(string: baseURL + image)) { image in
+                WebImage(url: URL(string: NetworkAPIBaseURL + image)) { image in
                     image
                         .resizable()
                         .scaledToFill()
