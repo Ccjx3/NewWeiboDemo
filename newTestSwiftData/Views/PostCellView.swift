@@ -13,6 +13,7 @@ struct PostCellView: View {
     @Bindable var post: Post
     @Environment(\.modelContext) private var modelContext
     @State private var showDeletePopover = false
+    var onTapContent: (() -> Void)? = nil  // 点击内容区域的回调
     
     /// 格式化数字显示（1000+ 显示为 1k+，1000000+ 显示为 1M+）
     private func formatCount(_ count: Int) -> String {
@@ -88,17 +89,35 @@ struct PostCellView: View {
                 }
             }
             
-            // 文本内容
+            // 文本内容 - 添加点击手势
             Text(post.text)
                 .font(.body)
                 .lineLimit(nil)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onTapContent?()
+                }
             
-            // 图片网格
-            if !post.images.isEmpty {
+            // 视频播放器（优先显示视频）
+            if post.hasVideo {
+                let screenWidth = UIScreen.main.bounds.width
+                let videoWidth = screenWidth - 32 // 减去左右 padding
+                let videoHeight = videoWidth * 9 / 16 // 16:9 比例
+                
+                PostVideoPlayer(videoUrl: post.videoUrl)
+                    .frame(width: videoWidth, height: videoHeight)
+                    .cornerRadius(12)
+            }
+            // 图片网格（如果没有视频才显示图片）
+            else if !post.images.isEmpty {
                 let screenWidth = UIScreen.main.bounds.width
                 let imageWidth = screenWidth - 32 // 减去左右 padding
                 PostImageCell(images: post.images, width: imageWidth)
                     .frame(height: calculateImageHeight(images: post.images, width: imageWidth))
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        onTapContent?()
+                    }
             }
             
             // 互动区域
@@ -153,7 +172,18 @@ struct PostCellView: View {
             // 点赞状态改变时同步到 JSON
             Task {
                 try? modelContext.save()
-                JSONService.savePostsToJSON(fileName: "PostListData_recommend_1.json", modelContext: modelContext)
+                // 根据帖子ID判断属于哪个列表
+                let fileName: String
+                if post.id >= 1000 && post.id < 2000 {
+                    fileName = "PostListData_recommend_2.json"
+                } else if post.id >= 2000 && post.id < 3000 {
+                    fileName = "PostListData_hot_2.json"
+                } else if post.id >= 3000 && post.id < 4000 {
+                    fileName = "PostListData_recommend_2.json"
+                } else {
+                    fileName = "PostListData_recommend_2.json"
+                }
+                JSONService.savePostsToJSON(fileName: fileName, modelContext: modelContext)
             }
         }
         .overlay {
@@ -178,13 +208,16 @@ struct PostCellView: View {
                         // 根据帖子ID判断属于哪个列表
                         let fileName: String
                         if post.id >= 1000 && post.id < 2000 {
-                            fileName = "PostListData_recommend_1.json"
+                            fileName = "PostListData_recommend_2.json"
                             print("📝 删除推荐列表帖子")
                         } else if post.id >= 2000 && post.id < 3000 {
-                            fileName = "PostListData_hot_1.json"
+                            fileName = "PostListData_hot_2.json"
                             print("📝 删除热门列表帖子")
+                        } else if post.id >= 3000 && post.id < 4000 {
+                            fileName = "PostListData_recommend_2.json"
+                            print("📝 删除推荐列表帖子（视频帖子）")
                         } else {
-                            fileName = "PostListData_recommend_1.json"
+                            fileName = "PostListData_recommend_2.json"
                             print("⚠️ 未知ID范围，默认使用推荐列表")
                         }
                         

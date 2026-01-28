@@ -129,7 +129,7 @@ class JSONService {
             // 根据文件名确定 ID 范围
             let idRange: Range<Int>
             if fileName.contains("recommend") {
-                idRange = 1000..<2000
+                idRange = 1000..<4000  // 包含普通帖子(1000-1999)和视频帖子(3000-3999)
             } else if fileName.contains("hot") {
                 idRange = 2000..<3000
             } else {

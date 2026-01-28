@@ -21,6 +21,7 @@ struct AddPostView: View {
     @State private var avatar = ""
     @State private var images: [String] = []
     @State private var newImageName = ""
+    @State private var videoUrl = ""
     
     var body: some View {
         NavigationView {
@@ -33,6 +34,13 @@ struct AddPostView: View {
                 Section("内容") {
                     TextEditor(text: $text)
                         .frame(height: 100)
+                }
+                
+                Section("视频") {
+                    TextField("视频 URL 或文件名", text: $videoUrl)
+                    Text("提示：如果添加了视频，图片将不会显示")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 
                 Section("图片") {
@@ -105,7 +113,8 @@ struct AddPostView: View {
             images: images,
             commentCount: 0,
             likeCount: 0,
-            isLiked: false
+            isLiked: false,
+            videoUrl: videoUrl
         )
         
         modelContext.insert(newPost)
@@ -135,9 +144,9 @@ enum PostListType {
     func getIdRange() -> (Int, Int, Int, String) {
         switch self {
         case .recommend:
-            return (1000, 2000, 999, "PostListData_recommend_1.json")
+            return (1000, 2000, 999, "PostListData_recommend_2.json")
         case .hot:
-            return (2000, 3000, 1999, "PostListData_hot_1.json")
+            return (2000, 3000, 1999, "PostListData_hot_2.json")
         }
     }
 }

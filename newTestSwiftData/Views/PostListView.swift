@@ -113,9 +113,9 @@ struct PostListView: View {
             print("📥 开始从 JSON 加载初始数据...")
             isLoading = true
             
-            // 在主线程上执行加载
+            // 在主线程上执行加载 - 使用包含视频的新数据文件
             let loadedPosts = JSONService.loadPostsFromJSON(
-                fileName: "PostListData_recommend_1.json",
+                fileName: "PostListData_recommend_2.json",
                 modelContext: modelContext
             )
             
@@ -133,18 +133,6 @@ struct PostListView: View {
             print("❌ 检查数据库时出错: \(error.localizedDescription)")
         }
     }
-    
-    // 禁用侧拉删除功能，只能通过点击 X 按钮删除
-    // /// 删除帖子
-    // private func deletePosts(offsets: IndexSet) {
-    //     withAnimation {
-    //         for index in offsets {
-    //             modelContext.delete(posts[index])
-    //         }
-    //         // 删除后同步到 JSON
-    //         JSONService.savePostsToJSON(fileName: "PostListData_recommend_1.json", modelContext: modelContext)
-    //     }
-    // }
     
 }
 

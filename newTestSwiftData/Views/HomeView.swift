@@ -12,22 +12,22 @@ import SwiftData
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     
-    // 推荐和热门的帖子数据
-    @Query(
-        filter: #Predicate<Post> { post in
-            post.id >= 1000 && post.id < 2000
-        },
-        sort: \Post.id,
-        order: .forward
-    ) private var recommendPosts: [Post]
+    // 查询所有帖子，然后在计算属性中分类
+    @Query(sort: \Post.id, order: .forward) private var allPosts: [Post]
     
-    @Query(
-        filter: #Predicate<Post> { post in
-            post.id >= 2000 && post.id < 3000
-        },
-        sort: \Post.id,
-        order: .forward
-    ) private var hotPosts: [Post]
+    // 推荐帖子：ID 1000-1999 或 3000-3029
+    private var recommendPosts: [Post] {
+        allPosts.filter { post in
+            (post.id >= 1000 && post.id < 2000) || (post.id >= 3000 && post.id < 3030)
+        }
+    }
+    
+    // 热门帖子：ID 2000-2999 或 3030-3099
+    private var hotPosts: [Post] {
+        allPosts.filter { post in
+            (post.id >= 2000 && post.id < 3000) || (post.id >= 3030 && post.id < 3100)
+        }
+    }
     
     @State private var leftPercent: CGFloat = 0 // 0 为推荐，1 为热门
     @State private var hasLoadedRecommend = false
@@ -97,22 +97,22 @@ struct HomeView: View {
         
         isLoading = true
         
-        // 加载推荐数据
+        // 加载推荐数据 - 使用新的 JSON 文件
         if !hasLoadedRecommend && recommendPosts.isEmpty {
             print("📥 开始加载推荐数据...")
             let loaded = JSONService.loadPostsFromJSON(
-                fileName: "PostListData_recommend_1.json",
+                fileName: "PostListData_recommend_2.json",
                 modelContext: modelContext
             )
             hasLoadedRecommend = true
             print("✅ 推荐数据加载完成: \(loaded.count) 条")
         }
         
-        // 加载热门数据
+        // 加载热门数据 - 使用新的 JSON 文件
         if !hasLoadedHot && hotPosts.isEmpty {
             print("📥 开始加载热门数据...")
             let loaded = JSONService.loadPostsFromJSON(
-                fileName: "PostListData_hot_1.json",
+                fileName: "PostListData_hot_2.json",
                 modelContext: modelContext
             )
             hasLoadedHot = true
@@ -149,10 +149,7 @@ struct PostContentView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(posts) { post in
-                                NavigationLink(destination: PostDetailView(post: post)) {
-                                    PostCellView(post: post)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                                PostCellWithNavigation(post: post)
                             }
                         }
                         .padding(.vertical, 12)
@@ -163,11 +160,35 @@ struct PostContentView: View {
     }
 }
 
+/// 带导航功能的帖子单元格包装器
+struct PostCellWithNavigation: View {
+    @Bindable var post: Post
+    @State private var navigateToDetail = false
+    
+    var body: some View {
+        ZStack {
+            // 隐藏的 NavigationLink
+            NavigationLink(destination: PostDetailView(post: post), isActive: $navigateToDetail) {
+                EmptyView()
+            }
+            .hidden()
+            
+            // 帖子内容
+            PostCellView(post: post, onTapContent: {
+                // 点击内容区域时导航到详情页
+                print("📱 点击帖子内容，准备导航到详情页")
+                navigateToDetail = true
+            })
+        }
+    }
+}
+
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Post.self, configurations: config)
     
-    return HomeView()
+    HomeView()
         .modelContainer(container)
 }
+
 

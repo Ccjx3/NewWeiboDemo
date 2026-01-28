@@ -10,12 +10,12 @@ import SDWebImageSwiftUI
 
 /// 网络图片加载视图
 /// 支持从网络加载图片，带有加载动画和占位效果
+/// 使用 NetworkManager 中的 baseURL 统一管理 URL
 struct NetworkImageView: View {
     let imageURL: String
-    let baseURL = "https://github.com/xiaoyouxinqing/PostDemo/raw/master/PostDemo/Resources/"
     
     var body: some View {
-        WebImage(url: URL(string: baseURL + imageURL)) { image in
+        WebImage(url: URL(string: NetworkAPIBaseURL + imageURL)) { image in
             image
                 .resizable()
         } placeholder: {

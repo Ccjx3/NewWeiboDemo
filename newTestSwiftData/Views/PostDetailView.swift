@@ -81,6 +81,17 @@ struct PostDetailView: View {
                         .lineLimit(nil)
                         .padding(.top, 4)
                     
+                    // 视频播放器
+                    if post.hasVideo {
+                        let screenWidth = UIScreen.main.bounds.width
+                        let videoWidth = screenWidth - 32
+                        let videoHeight = videoWidth * 9 / 16  // 16:9 比例
+                        
+                        PostVideoPlayer(videoUrl: post.videoUrl)
+                            .frame(width: videoWidth, height: videoHeight)
+                            .padding(.top, 8)
+                    }
+                    
                     // 图片网格
                     if !post.images.isEmpty {
                         let screenWidth = UIScreen.main.bounds.width
@@ -184,7 +195,18 @@ struct PostDetailView: View {
             // 点赞状态改变时同步到 JSON
             Task {
                 try? modelContext.save()
-                JSONService.savePostsToJSON(fileName: "PostListData_recommend_1.json", modelContext: modelContext)
+                // 根据帖子ID判断属于哪个列表
+                let fileName: String
+                if post.id >= 1000 && post.id < 2000 {
+                    fileName = "PostListData_recommend_2.json"
+                } else if post.id >= 2000 && post.id < 3000 {
+                    fileName = "PostListData_hot_2.json"
+                } else if post.id >= 3000 && post.id < 4000 {
+                    fileName = "PostListData_recommend_2.json"
+                } else {
+                    fileName = "PostListData_recommend_2.json"
+                }
+                JSONService.savePostsToJSON(fileName: fileName, modelContext: modelContext)
             }
         }
     }

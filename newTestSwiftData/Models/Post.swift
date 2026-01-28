@@ -13,7 +13,7 @@ import SwiftData
 @Model
 final class Post {
     /// 帖子唯一标识符
-    var id: Int
+    @Attribute(.unique) var id: Int
     
     /// 用户头像文件名（存储在 Resources 文件夹中）
     /// SwiftData 中图片通常存储为 String（文件名或 URL），而不是直接存储图片数据
@@ -50,6 +50,11 @@ final class Post {
     /// 是否已点赞
     var isLiked: Bool
     
+    /// 视频 URL（可选）
+    /// 如果帖子包含视频，则存储视频文件名或完整 URL
+    /// 空字符串表示没有视频
+    var videoUrl: String
+    
     /// 初始化方法
     init(
         id: Int,
@@ -62,7 +67,8 @@ final class Post {
         images: [String],
         commentCount: Int,
         likeCount: Int,
-        isLiked: Bool
+        isLiked: Bool,
+        videoUrl: String = ""
     ) {
         self.id = id
         self.avatar = avatar
@@ -75,6 +81,7 @@ final class Post {
         self.commentCount = commentCount
         self.likeCount = likeCount
         self.isLiked = isLiked
+        self.videoUrl = videoUrl
     }
     
     /// 从 JSON 字典创建 Post 实例
@@ -94,6 +101,9 @@ final class Post {
             return nil
         }
         
+        // video_url 是可选字段，如果不存在则使用空字符串
+        let videoUrl = json["video_url"] as? String ?? ""
+        
         self.init(
             id: id,
             avatar: avatar,
@@ -105,7 +115,8 @@ final class Post {
             images: images,
             commentCount: commentCount,
             likeCount: likeCount,
-            isLiked: isLiked
+            isLiked: isLiked,
+            videoUrl: videoUrl
         )
     }
     
@@ -123,7 +134,13 @@ final class Post {
             "images": images,
             "commentCount": commentCount,
             "likeCount": likeCount,
-            "isLiked": isLiked
+            "isLiked": isLiked,
+            "video_url": videoUrl
         ]
+    }
+    
+    /// 判断帖子是否包含视频
+    var hasVideo: Bool {
+        return !videoUrl.isEmpty
     }
 }

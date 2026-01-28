@@ -28,16 +28,21 @@ struct PostData: Codable {
     let commentCount: Int
     let likeCount: Int
     let isLiked: Bool
+    let videoUrl: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case id, avatar, vip, name, date, isFollowed, text, images, commentCount, likeCount, isLiked
+        case videoUrl = "video_url"
+    }
 }
 
 /// 网络 API 接口
 /// 提供获取帖子列表和创建帖子的功能
 class NetworkAPI {
-    
     /// 获取推荐帖子列表
     /// - Parameter completion: 完成回调，返回 PostListResponse 或错误
     static func recommendPostList(completion: @escaping (Result<PostListResponse, Error>) -> Void) {
-        NetworkManager.shared.requestGet(path: "PostListData_recommend_1.json", parameters: nil) { result in
+        NetworkManager.shared.requestGet(path: "PostListData_recommend_2.json", parameters: nil) { result in
             switch result {
             case let .success(data):
                 let parseResult: Result<PostListResponse, Error> = self.parseData(data)
@@ -51,7 +56,7 @@ class NetworkAPI {
     /// 获取热门帖子列表
     /// - Parameter completion: 完成回调，返回 PostListResponse 或错误
     static func hotPostList(completion: @escaping (Result<PostListResponse, Error>) -> Void) {
-        NetworkManager.shared.requestGet(path: "PostListData_hot_1.json", parameters: nil) { result in
+        NetworkManager.shared.requestGet(path: "PostListData_hot_2.json", parameters: nil) { result in
             switch result {
             case let .success(data):
                 let parseResult: Result<PostListResponse, Error> = self.parseData(data)
