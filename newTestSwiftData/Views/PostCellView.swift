@@ -13,7 +13,11 @@ struct PostCellView: View {
     @Bindable var post: Post
     @Environment(\.modelContext) private var modelContext
     @State private var showDeletePopover = false
+    @State private var showCommentInput = false  // 控制评论输入界面显示
+    @State private var showShareInput = false  // 控制转发输入界面显示
     var onTapContent: (() -> Void)? = nil  // 点击内容区域的回调
+    var onCommentSuccess: (() -> Void)? = nil  // 评论成功回调
+    var onShareSuccess: (() -> Void)? = nil  // 转发成功回调
     
     /// 格式化数字显示（1000+ 显示为 1k+，1000000+ 显示为 1M+）
     private func formatCount(_ count: Int) -> String {
@@ -146,7 +150,8 @@ struct PostCellView: View {
                     text: formatCount(post.commentCount),
                     color: .black)
                 {
-                    print("点击评论")
+                    print("🔘 点击评论按钮")
+                    showCommentInput = true
                 }
                 
                 Spacer()
@@ -156,7 +161,8 @@ struct PostCellView: View {
                     text: "转发",
                     color: .black)
                 {
-                    print("点击转发")
+                    print("🔘 点击转发按钮")
+                    showShareInput = true
                 }
                 
                 Spacer()
@@ -253,6 +259,24 @@ struct PostCellView: View {
                 .offset(x: -20, y: 45)
                 .transition(.scale(scale: 0.8, anchor: .top).combined(with: .opacity))
             }
+        }
+        // 评论输入界面 - 使用 sheet 全屏弹出
+        .sheet(isPresented: $showCommentInput) {
+            CommentInputView(post: post) {
+                // 发送成功回调
+                print("✅ 评论发送成功，触发回调")
+                onCommentSuccess?()
+            }
+        }
+        // 转发输入界面 - 使用 sheet 弹出
+        .sheet(isPresented: $showShareInput) {
+            ShareInputView(post: post) {
+                // 转发成功回调
+                print("✅ 转发成功，触发回调")
+                onShareSuccess?()
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
     }
     

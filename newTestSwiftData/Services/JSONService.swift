@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import Combine
 
 /// JSON 数据服务
 /// 负责从 JSON 文件加载数据到 SwiftData，以及将 SwiftData 数据保存回 JSON 文件

@@ -13,6 +13,8 @@ struct PostDetailView: View {
     @Bindable var post: Post
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @State private var showCommentInput = false  // 控制评论输入界面显示
+    @State private var showShareInput = false  // 控制转发输入界面显示
     
     /// 格式化数字显示（1000+ 显示为 1k+，1000000+ 显示为 1M+）
     private func formatCount(_ count: Int) -> String {
@@ -127,7 +129,8 @@ struct PostDetailView: View {
                             text: formatCount(post.commentCount),
                             color: .black)
                         {
-                            print("点击评论")
+                            print("🔘 点击评论按钮")
+                            showCommentInput = true
                         }
                         
                         Spacer()
@@ -137,7 +140,8 @@ struct PostDetailView: View {
                             text: "转发",
                             color: .black)
                         {
-                            print("点击转发")
+                            print("🔘 点击转发按钮")
+                            showShareInput = true
                         }
                         
                         Spacer()
@@ -191,6 +195,24 @@ struct PostDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("详情")
+        // 评论输入界面 - 使用 sheet 全屏弹出
+        .sheet(isPresented: $showCommentInput) {
+            CommentInputView(post: post) {
+                // 发送成功回调
+                print("✅ 评论发送成功，触发回调")
+                // 可以在这里更新评论数
+                post.commentCount += 1
+            }
+        }
+        // 转发输入界面 - 使用 sheet 弹出
+        .sheet(isPresented: $showShareInput) {
+            ShareInputView(post: post) {
+                // 转发成功回调
+                print("✅ 转发成功，触发回调")
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
         .onChange(of: post.isLiked) { _, _ in
             // 点赞状态改变时同步到 JSON
             Task {

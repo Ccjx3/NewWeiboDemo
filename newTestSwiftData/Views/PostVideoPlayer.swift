@@ -433,4 +433,3 @@ struct FullScreenAVPlayerViewController: UIViewControllerRepresentable {
         .frame(height: 300)
         .padding()
 }
-

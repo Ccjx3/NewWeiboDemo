@@ -49,8 +49,6 @@ struct PostListView: View {
                                 .listRowSeparator(.hidden)
                                 .listRowBackground(Color.clear)
                             }
-                            // 禁用侧拉删除功能，只能通过点击 X 按钮删除
-                            // .onDelete(perform: deletePosts)
                         }
                         .listStyle(.plain)
                     }
@@ -65,10 +63,6 @@ struct PostListView: View {
                         Image(systemName: "plus")
                     }
                 }
-                // 禁用编辑按钮，只能通过点击 X 按钮删除
-                // ToolbarItem(placement: .navigationBarLeading) {
-                //     EditButton()
-                // }
             }
             .sheet(isPresented: $showingAddPost) {
                 AddPostView()

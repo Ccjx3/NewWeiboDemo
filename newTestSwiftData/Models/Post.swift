@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import Combine
 
 /// Post 数据模型
 /// 代表一条社交媒体帖子，包含用户信息、内容、图片和互动数据
