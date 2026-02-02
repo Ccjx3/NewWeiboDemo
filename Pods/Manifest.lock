@@ -2,6 +2,7 @@ PODS:
   - Alamofire (5.11.0)
   - BBSwiftUIKit (0.1.0)
   - JXPhotoBrowser (3.1.6)
+  - KeychainSwift (24.0.0)
   - SDWebImage (5.21.5):
     - SDWebImage/Core (= 5.21.5)
   - SDWebImage/Core (5.21.5)
@@ -12,6 +13,7 @@ DEPENDENCIES:
   - Alamofire
   - BBSwiftUIKit
   - JXPhotoBrowser
+  - KeychainSwift
   - SDWebImageSwiftUI
 
 SPEC REPOS:
@@ -19,6 +21,7 @@ SPEC REPOS:
     - Alamofire
     - BBSwiftUIKit
     - JXPhotoBrowser
+    - KeychainSwift
     - SDWebImage
     - SDWebImageSwiftUI
 
@@ -26,9 +29,10 @@ SPEC CHECKSUMS:
   Alamofire: bd5e7b23a1a750975288482c1831d71e74415f86
   BBSwiftUIKit: 4cff8ce7d7dabaa2a161b6435323bfae9eb14fed
   JXPhotoBrowser: e979c93b54a2c434b9846e8c286c695e3c70b3a1
+  KeychainSwift: 007c4647486e4563adca839cf02cef00deb3b670
   SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838
   SDWebImageSwiftUI: 965cdad5a7210b7ec06aaa1a3d17180d0a152250
 
-PODFILE CHECKSUM: 0ee1c1d27ef7673ad3c600a8a71e1d550772bce6
+PODFILE CHECKSUM: 9e5c241971f8677691e33782739e597ccf489b84
 
 COCOAPODS: 1.16.2

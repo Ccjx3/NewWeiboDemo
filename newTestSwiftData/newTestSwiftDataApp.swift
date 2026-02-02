@@ -10,9 +10,10 @@ import SwiftData
 
 @main
 struct newTestSwiftDataApp: App {
+    // Post 数据库（原有的）
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Post.self,  // 使用 Post 模型替代 Item
+            Post.self,  // 帖子模型
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -38,11 +39,23 @@ struct newTestSwiftDataApp: App {
             }
         }
     }()
+    
+    init() {
+        // 初始化 SwiftDataAuthService（使用独立的数据库）
+        _ = SwiftDataAuthService.shared
+        
+        // 延迟打印，确保数据库初始化完成
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            print("\n🔍 查询认证数据库信息：")
+            SwiftDataAuthService.shared.printAllUsers()
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(AuthManager.shared)  // 注入 AuthManager
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(sharedModelContainer)  // 只注入 Post 数据库
     }
 }

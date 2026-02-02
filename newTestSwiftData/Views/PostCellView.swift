@@ -18,6 +18,7 @@ struct PostCellView: View {
     var onTapContent: (() -> Void)? = nil  // 点击内容区域的回调
     var onCommentSuccess: (() -> Void)? = nil  // 评论成功回调
     var onShareSuccess: (() -> Void)? = nil  // 转发成功回调
+    var onDelete: (() -> Void)? = nil  // 删除成功回调
     
     /// 格式化数字显示（1000+ 显示为 1k+，1000000+ 显示为 1M+）
     private func formatCount(_ count: Int) -> String {
@@ -36,8 +37,8 @@ struct PostCellView: View {
         VStack(alignment: .leading, spacing: 12) {
             // 用户信息区域
             HStack(alignment: .center, spacing: 12) {
-                // 头像 - 使用网络图片加载
-                NetworkImageView(imageURL: post.avatar)
+                // 头像 - 使用智能图片加载（自动判断网络/本地）
+                SmartImageView(imagePath: post.avatar)
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 50, height: 50)
                     .clipShape(Circle())
@@ -211,21 +212,6 @@ struct PostCellView: View {
                 DeletePopoverView(
                     onDelete: {
                         print("🗑️ 开始删除帖子: \(post.id)")
-                        // 根据帖子ID判断属于哪个列表
-                        let fileName: String
-                        if post.id >= 1000 && post.id < 2000 {
-                            fileName = "PostListData_recommend_2.json"
-                            print("📝 删除推荐列表帖子")
-                        } else if post.id >= 2000 && post.id < 3000 {
-                            fileName = "PostListData_hot_2.json"
-                            print("📝 删除热门列表帖子")
-                        } else if post.id >= 3000 && post.id < 4000 {
-                            fileName = "PostListData_recommend_2.json"
-                            print("📝 删除推荐列表帖子（视频帖子）")
-                        } else {
-                            fileName = "PostListData_recommend_2.json"
-                            print("⚠️ 未知ID范围，默认使用推荐列表")
-                        }
                         
                         // 先关闭弹窗
                         withAnimation {
@@ -234,16 +220,25 @@ struct PostCellView: View {
                         
                         // 延迟删除，确保动画完成
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            // 判断是否为用户创建的帖子
+                            if post.id >= 10000 {
+                                // 用户创建的帖子，使用 UserPostManager 删除
+                                print("📝 删除用户创建的帖子")
+                                UserPostManager.shared.deleteUserPost(postId: post.id, modelContext: modelContext)
+                            } else {
+                                // 网络帖子，只从 SwiftData 删除（不删除 JSON 文件）
+                                print("📝 删除网络帖子（仅从内存删除）")
+                            }
+                            
+                            // 从 SwiftData 删除
                             withAnimation {
                                 modelContext.delete(post)
                                 do {
                                     try modelContext.save()
                                     print("✅ 帖子从SwiftData删除成功")
-                                    print("删除成功")
                                     
-                                    // 同步到对应的JSON文件
-                                    JSONService.savePostsToJSON(fileName: fileName, modelContext: modelContext)
-                                    print("✅ 已同步到JSON文件: \(fileName)")
+                                    // 调用删除回调，通知父视图更新列表
+                                    onDelete?()
                                 } catch {
                                     print("❌ 删除失败: \(error)")
                                 }

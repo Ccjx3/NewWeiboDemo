@@ -145,3 +145,62 @@ final class Post {
         return !videoUrl.isEmpty
     }
 }
+
+// MARK: - 数据源扩展
+
+extension Post {
+    /// 判断是否为本地创建的帖子
+    var isLocalPost: Bool {
+        return id >= 10000
+    }
+    
+    /// 判断是否为网络数据
+    var isNetworkPost: Bool {
+        return id < 10000
+    }
+    
+    /// 获取数据源类型
+    var sourceType: PostSourceType {
+        switch id {
+        case 1000..<2000: return .recommendNetwork
+        case 2000..<3000: return .hotNetwork
+        case 3000..<4000: return .videoNetwork
+        case 10000...: return .userLocal
+        default: return .unknown
+        }
+    }
+    
+    /// 数据源显示名称
+    var sourceDisplayName: String {
+        return sourceType.displayName
+    }
+}
+
+/// 帖子数据源类型
+enum PostSourceType {
+    case recommendNetwork  // 网络推荐
+    case hotNetwork        // 网络热门
+    case videoNetwork      // 网络视频
+    case userLocal         // 用户本地
+    case unknown
+    
+    var displayName: String {
+        switch self {
+        case .recommendNetwork: return "推荐"
+        case .hotNetwork: return "热门"
+        case .videoNetwork: return "视频"
+        case .userLocal: return "我的"
+        case .unknown: return "未知"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .recommendNetwork: return "star.fill"
+        case .hotNetwork: return "flame.fill"
+        case .videoNetwork: return "play.rectangle.fill"
+        case .userLocal: return "person.fill"
+        case .unknown: return "questionmark.circle"
+        }
+    }
+}

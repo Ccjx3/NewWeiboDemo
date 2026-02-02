@@ -15,11 +15,22 @@ struct HomeNavigationBar: View {
     @Binding var leftPercent: CGFloat // 0 为推荐，1 为热门
     var onAddPost: () -> Void // 添加帖子回调
     
+    @StateObject private var authManager = AuthManager.shared
+    @State private var showMenuPopover = false
+    @State private var showUserView = false
+    @State private var showLoginView = false
+    @State private var showSettings = false
+    @State private var showSearch = false
+    
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             // 左侧菜单按钮
             Button(action: {
-                print("点击菜单按钮")
+                // 添加触觉反馈
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
+                
+                showMenuPopover = true
             }) {
                 Image(systemName: "line.3.horizontal")
                     .resizable()
@@ -30,6 +41,28 @@ struct HomeNavigationBar: View {
                     .foregroundColor(.blue)
             }
             .buttonStyle(PlainButtonStyle())
+            .popover(isPresented: $showMenuPopover, arrowEdge: .top) {
+                MenuPopoverView(
+                    isPresented: $showMenuPopover,
+                    showUserView: $showUserView,
+                    showSettings: $showSettings,
+                    showSearch: $showSearch
+                )
+                .presentationCompactAdaptation(.popover)
+            }
+            .sheet(isPresented: $showUserView) {
+                if authManager.isLoggedIn {
+                    UserView()
+                } else {
+                    LoginView()
+                }
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
+            }
+            .fullScreenCover(isPresented: $showSearch) {
+                SearchView()
+            }
             
             Spacer()
             
@@ -40,10 +73,14 @@ struct HomeNavigationBar: View {
                         .bold()
                         .frame(width: kLabelWidth, height: kButtonHeight)
                         .foregroundColor(leftPercent < 0.5 ? .blue : .gray)
-                        .scaleEffect(leftPercent < 0.5 ? 1.05 : 1.0)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: leftPercent)
+                        .scaleEffect(leftPercent < 0.5 ? 1.08 : 1.0)
+                        .animation(.interpolatingSpring(stiffness: 300, damping: 25), value: leftPercent)
                         .onTapGesture {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            // 添加触觉反馈
+                            let generator = UIImpactFeedbackGenerator(style: .light)
+                            generator.impactOccurred()
+                            
+                            withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) {
                                 self.leftPercent = 0
                             }
                         }
@@ -54,10 +91,14 @@ struct HomeNavigationBar: View {
                         .bold()
                         .frame(width: kLabelWidth, height: kButtonHeight)
                         .foregroundColor(leftPercent >= 0.5 ? .blue : .gray)
-                        .scaleEffect(leftPercent >= 0.5 ? 1.05 : 1.0)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: leftPercent)
+                        .scaleEffect(leftPercent >= 0.5 ? 1.08 : 1.0)
+                        .animation(.interpolatingSpring(stiffness: 300, damping: 25), value: leftPercent)
                         .onTapGesture {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            // 添加触觉反馈
+                            let generator = UIImpactFeedbackGenerator(style: .light)
+                            generator.impactOccurred()
+                            
+                            withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) {
                                 self.leftPercent = 1
                             }
                         }
@@ -65,9 +106,16 @@ struct HomeNavigationBar: View {
                 .font(.system(size: 20))
                 .padding(.top, 5)
                 
-                // 指示器容器
-                HStack(spacing: 0) {
-                    // 推荐指示器
+                // 指示器容器 - 使用单个滑动指示器替代两个独立指示器
+                GeometryReader { geometry in
+                    let indicatorWidth: CGFloat = 30
+                    let containerWidth = UIScreen.main.bounds.width * 0.5
+                    // 计算左侧位置：左侧标签中心 - indicator宽度的一半
+                    let leftPosition = kLabelWidth / 2 - indicatorWidth / 2
+                    // 计算右侧位置：容器宽度 - 右侧标签宽度的一半 - indicator宽度的一半
+                    let rightPosition = containerWidth - kLabelWidth / 2 - indicatorWidth / 2
+                    let currentPosition = leftPosition + (rightPosition - leftPosition) * leftPercent
+                    
                     RoundedRectangle(cornerRadius: 2)
                         .fill(
                             LinearGradient(
@@ -76,26 +124,11 @@ struct HomeNavigationBar: View {
                                 endPoint: .trailing
                             )
                         )
-                        .frame(width: 30, height: 4)
-                        .opacity(leftPercent < 0.5 ? 1 : 0)
-                        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: leftPercent)
-                    
-                    Spacer()
-                    
-                    // 热门指示器
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [.blue, .cyan]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: 30, height: 4)
-                        .opacity(leftPercent >= 0.5 ? 1 : 0)
-                        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: leftPercent)
+                        .frame(width: indicatorWidth, height: 4)
+                        .offset(x: currentPosition)
+                        .animation(.interpolatingSpring(stiffness: 300, damping: 30), value: leftPercent)
                 }
-                .frame(width: kLabelWidth * 2 + 40)
+                .frame(height: 4)
             }
             .frame(width: UIScreen.main.bounds.width * 0.5)
             

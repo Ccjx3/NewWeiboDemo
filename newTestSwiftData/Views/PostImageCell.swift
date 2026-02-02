@@ -28,21 +28,12 @@ struct PostImageCell: View {
     var body: some View {
         Group {
             if images.count == 1 {
-                // 单张图片布局 - 使用网络图片
-                WebImage(url: URL(string: NetworkAPIBaseURL + images[0])) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    ShimmerPlaceholder()
-                }
-                .onSuccess { image, data, cacheType in
-                    // 图片加载成功
-                }
-                .frame(width: width, height: width * 0.75)
-                .clipped()
-                .cornerRadius(8)
-                .transition(AnyTransition.opacity.animation(.easeInOut(duration: 0.3)))
+                // 单张图片布局 - 使用智能图片加载
+                SmartImageView(imagePath: images[0])
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: width, height: width * 0.75)
+                    .clipped()
+                    .cornerRadius(8)
                 // 添加点击手势，点击后显示图片浏览器
                 .onTapGesture {
                     print("📷 点击了第 1 张图片（单图），准备打开浏览器")
@@ -138,7 +129,17 @@ struct PostImageCell: View {
             // 使用原生图片浏览器（仿小红书/微博效果）
             NativePhotoBrowser(
                 isPresented: $showPhotoBrowser,
-                images: images.map { NetworkAPIBaseURL + $0 }, // 转换为完整 URL
+                images: images.map { imagePath in
+                    // 智能处理图片路径
+                    if imagePath.hasPrefix("UserMedia/") || imagePath.hasPrefix("local://") {
+                        // 本地图片，返回本地文件 URL
+                        let cleanPath = imagePath.replacingOccurrences(of: "local://", with: "")
+                        return MediaManager.shared.getMediaURL(relativePath: cleanPath)?.absoluteString ?? ""
+                    } else {
+                        // 网络图片，拼接完整 URL
+                        return NetworkAPIBaseURL + imagePath
+                    }
+                },
                 initialIndex: selectedImageIndex
             )
             .id(selectedImageIndex) // 关键修复：使用 selectedImageIndex 作为 id，确保每次点击不同图片都重新创建视图
@@ -182,21 +183,12 @@ struct PostImageCellRow: View {
                 // 计算图片在整个数组中的实际索引
                 let actualIndex = startIndex + rowIndex
                 
-                // 使用网络图片加载
-                WebImage(url: URL(string: NetworkAPIBaseURL + image)) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    ShimmerPlaceholder()
-                }
-                .onSuccess { image, data, cacheType in
-                    // 图片加载成功
-                }
-                .frame(width: imageSize, height: imageSize)
-                .clipped()
-                .cornerRadius(8)
-                .transition(AnyTransition.opacity.animation(.easeInOut(duration: 0.3)))
+                // 使用智能图片加载
+                SmartImageView(imagePath: image)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: imageSize, height: imageSize)
+                    .clipped()
+                    .cornerRadius(8)
                 // 添加点击手势
                 .onTapGesture {
                     // 触发回调，传递实际索引

@@ -131,6 +131,12 @@ class UserData: ObservableObject {
             return 
         }
         
+        // 防止正在刷新时加载更多
+        guard !isRefreshing else {
+            print("⚠️ 正在刷新中，跳过加载更多请求")
+            return
+        }
+        
         // 限制最大加载数量（可选）
         let currentList = postList(for: category)
         if currentList.count >= 50 {
@@ -185,10 +191,10 @@ class UserData: ObservableObject {
         // 只取前 pageSize 条数据
         let limitedList = Array(list.prefix(pageSize))
         
-        print("📊 开始刷新 \(category == .recommend ? "推荐" : "热门") 列表，共 \(list.count) 条数据，取前 \(pageSize) 条")
+        print("📊 开始刷新 \(category == .recommend ? "推荐" : "热门") 列表，共 \(list.count) 条网络数据，取前 \(pageSize) 条")
         
         // 去重并转换为 Post 对象
-        for (index, postData) in limitedList.enumerated() {
+        for postData in limitedList {
             // 检查是否在当前批次中重复
             if tempDic[postData.id] != nil {
                 print("⚠️ 跳过重复帖子 ID: \(postData.id)")
@@ -198,7 +204,7 @@ class UserData: ObservableObject {
             // 从数据库查找或创建新的 Post
             let post = findOrCreatePost(from: postData)
             tempList.append(post)
-            tempDic[postData.id] = tempList.count - 1
+            tempDic[post.id] = tempList.count - 1
         }
         
         // 使用动画更新 UI
@@ -231,11 +237,19 @@ class UserData: ObservableObject {
         let currentPage = category == .recommend ? recommendPage : hotPage
         
         // 计算应该跳过多少条数据
+        // 第一次加载更多时，页码为0，应该跳过前5条（已经在刷新时加载）
+        // 第二次加载更多时，页码为1，应该跳过前10条
         let skipCount = (currentPage + 1) * pageSize
         
         print("📊 加载更多 \(category == .recommend ? "推荐" : "热门") 列表")
-        print("   当前页码: \(currentPage)，已加载: \((currentPage + 1) * pageSize) 条，跳过: \(skipCount) 条")
+        print("   当前页码: \(currentPage)，已加载: \((currentPage + 1) * pageSize) 条，需跳过: \(skipCount) 条")
         print("   数据源总数: \(list.count) 条")
+        
+        // 检查是否还有更多数据
+        if skipCount >= list.count {
+            print("⚠️ 没有更多数据了（已到达数据源末尾）")
+            return
+        }
         
         // 跳过已加载的数据，只取接下来的 pageSize 条
         let limitedList = Array(list.dropFirst(skipCount).prefix(pageSize))
@@ -267,6 +281,12 @@ class UserData: ObservableObject {
             newPosts.append(post)
             print("✅ 添加帖子 ID: \(postData.id)")
             addedCount += 1
+        }
+        
+        // 如果没有新数据，直接返回
+        if newPosts.isEmpty {
+            print("⚠️ 没有新数据可添加")
+            return
         }
         
         // 使用动画更新 UI
@@ -350,6 +370,37 @@ class UserData: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             self?.loadingError = nil
         }
+    }
+    
+    /// 从列表中移除帖子
+    func removePost(_ post: Post, from category: PostListCategory) {
+        withAnimation(.easeOut(duration: 0.25)) {
+            switch category {
+            case .recommend:
+                if let index = recommendPosts.firstIndex(where: { $0.id == post.id }) {
+                    recommendPosts.remove(at: index)
+                    recommendPostDic.removeValue(forKey: post.id)
+                    // 更新后续帖子的索引
+                    for i in index..<recommendPosts.count {
+                        recommendPostDic[recommendPosts[i].id] = i
+                    }
+                    print("✅ 已从推荐列表移除帖子 ID: \(post.id)")
+                }
+            case .hot:
+                if let index = hotPosts.firstIndex(where: { $0.id == post.id }) {
+                    hotPosts.remove(at: index)
+                    hotPostDic.removeValue(forKey: post.id)
+                    // 更新后续帖子的索引
+                    for i in index..<hotPosts.count {
+                        hotPostDic[hotPosts[i].id] = i
+                    }
+                    print("✅ 已从热门列表移除帖子 ID: \(post.id)")
+                }
+            }
+        }
+        
+        // 触发列表重新加载
+        reloadData = true
     }
 }
 
